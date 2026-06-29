@@ -1,2 +1,2 @@
-# wsa
-labs and solutions to labs
+# WebSecurityAcademy
+A few answers to labs
