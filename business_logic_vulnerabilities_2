@@ -1,0 +1,61 @@
+Lab: 2FA broken logic
+level: practitioner
+description: " This lab's two-factor authentication is vulnerable due to its flawed logic. To solve the lab, access Carlos's account page.
+
+    Your credentials: wiener:peter
+    Victim's username: carlos
+
+You also have access to the email server to receive your 2FA verification code. "
+
+-----------------------------------------------------------------------------------------------
+
+1. This one is a bit more difficult than the previous lab. Also if you are using burpsuite community this lab needs a script to solve it
+
+2. If you try to log in in as wiener:peter it requires an authentication after passing the credentials. 
+In the request POST /login2 (it checks the 2FA 4-digit code) there is a 'verify' parameter which determines which user is going to get logged in
+Also in GET /login2, the 'verify' parameter in the HTTP header is used to generate 4 digit code for the user specified in that parameter
+
+3. This is a desing flaw, because of the possibility of logging in using your own credentials (account u created) 
+and when you need to submit a 4 digit code you can change the 'verify' parameter to an arbitrary login and bruteforce the 4-digit code
+This way you can login into an arbitrary account without knowing its password
+
+4. Generate the 4-digit code for the account you need to access (the code needs to be generated before the bruteforce attempt). 
+The request which generates the 4-digit code is GET /login2. Can be found at Proxy -> HTTP history
+It is the same GET /login2 that we got from logging in as wiener:peter at the beginning. Right click somewhere on the blank space in the request and select send to repeater
+
+5. Switch the tab to repeater, change the value in 'verify' to 'verify=carlos' and click send
+
+6. Go back to Proxy HTTP History and open POST /login2 that we also got previously from logging in as wiener:peter. Right click on the request, select 'Extensions' and 'Send to turbo intruder'
+
+7. In Turbo Intruder change the 'verify=wiener' to 'verify=carlos' and 'mfa-code=<number>' to 'mfa-code=%s'. 
+%s is a placeholder where Turbo Intruder puts the payload value
+
+8. You can use this script in the Turbo Intruder. It generates numbers from 0001 to 9999 and adds them to the request queue:
+-----
+def queueRequests(target, wordlists):
+    engine = RequestEngine(endpoint=target.endpoint,
+                           concurrentConnections=5,
+                           requestsPerConnection=100,
+                           pipeline=False,
+                           engine=Engine.THREADED
+                           )
+    
+    for i in range(10000):
+        payload = "{:04d}".format(i)
+        engine.queue(target.req, payload)
+
+
+def handleResponse(req, interesting):
+    table.add(req)
+-----
+9. Set the concurrent connection to a value of around 5, i think it gives the best accuracy/speed ratio
+
+10. Look for 'Status 302' in the Turbo Intruder table. If found, in its HTTP response is a parameter 'session=<value>' which is a session's cookie
+
+11. If there is no 'Status 302' start the script once again, sometimes the Turbo Intruder omits some requests (e.g. the code was 0382 but the requests were sent too fast and request with the 0382 code was not received
+by the server)
+
+12. Copy the <value> of the 'session' and go back to the Burpsuite browser. Right click on the labs website and select Inspect -> Application
+Now in the Application tab look for the Cookies tab. Under Cookies tab there should be a sub tab with the lab URL
+Double click it and a new table with sessions will open. Double click on any of the sessions' cookies and replace with the <value> you copied instead 
+Refresh the page, click on my account and it is solved
