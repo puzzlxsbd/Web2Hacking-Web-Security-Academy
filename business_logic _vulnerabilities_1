@@ -1,0 +1,23 @@
+Lab: Excessive trust in client-side controls
+level: apprentice
+description: " This lab doesn't adequately validate user input. You can exploit a logic flaw in its purchasing workflow to buy items for an unintended price. To solve the lab, buy a "Lightweight l33t leather jacket".
+
+You can log in to your own account using the following credentials: wiener:peter"
+
+------------------------------------------------------------------------------------------------------- 
+
+1. Copy the link to access the lab, open burpsuite (i use community edition) and go to proxy tab
+
+2. In proxy select open browser and paste the link in the browser that appears. If it redirects you to login site first, log in using your portswigger account credentials. The lab should appear then
+
+3. This is a more straightforward lab than others, click on my account and log in using credentials given in the description (wiener:peter)
+
+4. Click on view details under 'l33t leather jacket' and in the proxy tab click 'intercept off' (it flips the intercept to being on) 
+
+5. Now that the intercept is on, place the order on 1 jacket (add to cart button) and inspect the HTML in the intercepted HTTP request 
+
+6. In the body of the HTTP we see 'productId=1&redir=PRODUCT&quantity=1&price=133700'. change the price to a value that is less than your current store credit, for example price=1 (the price will now be 0.01$)
+
+7. Click on forward and disable intercept by clicking 'intercept on' (it flips the intercept to being off)
+
+8. Go to your shopping cart where you will see the jacket with the price you set (in this example its 0.01$). Click on place order and the lab is solved yayy :D
